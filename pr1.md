@@ -58,7 +58,7 @@ Y se vuelven a aplicar las funciones de resumen para comparar el resultado:
 Si se comparan las salidas obtenidas ahora con las anteriores se puede observar que no tienen ningun tipo de parecido, por ejemplo en md5 la primera salida fue "9e8214c21f0ee08a1532dfa574ea5eab" y tras modificar un caracter "e09c370d6b2aa4b54150b7c5bbfda02f".
 
 ## 1.2 Cifrado Simétrico de documentos
-### Una vez entendido el empleo del comando openssl-enc para cifrar y descifrar, con diferentes algoritmos y modos de operación, el empleo de ficheros binarios y BASE64, la obtención de claves de contraseñas detallada en el estándar PKCS #5 (PBKDF1 y PBKDF2) y su aplicación a las claves de cifrado simétrico, vectores de inicialización y sal (derivación de claves e “iv” a partir de contraseñas:
+### Una vez entendido el empleo del comando openssl-enc para cifrar y descifrar, con diferentes algoritmos y modos de operación, el empleo de ficheros binarios y BASE64, la obtención de claves de contraseñas detallada en el estándar PKCS #5 (PBKDF1 y PBKDF2) y su aplicación a las claves de cifrado simétrico, vectores de inicialización y sal derivación de claves e “iv” a partir de contraseñas:
 
 La opción "-enc" de OpenSSL se utiliza para cifrar y descifrar datos con el algoritmo de cifrado simétrico. 
 Un algoritmo de cifrado simétrico es un tipo de cifrado que utiliza la misma clave para cifrar y descifrar los datos. Esto se hace diviendo el mensaje original en bloques y cifrándolo con la clave, posteriormente se realiza el mismo proceso para descifrarlo.
