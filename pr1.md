@@ -124,7 +124,7 @@ openssl enc -des-ede3-ofb -salt -in texto.txt -out texto.tdes-ofb -p -pbkdf2
 Captura:
 ![ejer1_2_a4](./images/ejer1_2_a4.PNG)
 
-**RC4 en modo flujo:**
+**Chacha20 en modo flujo:**
 ```console
  openssl enc -rc4-chacha20  -salt -p -pbkdf2 -in texto.txt -out texto.rc4 
 ```
@@ -166,7 +166,7 @@ openssl enc -d -des-ede3-ofb -in texto.tdes-ofb -out descifrado.tdes-ofb -pbkdf2
 Captura:
 ![ejer1_2_b4](./images/ejer1_2_b4.PNG)
 
-**RC4 en modo flujo:**
+**Chacha20 en modo flujo:**
 ```console
 openssl enc -d -chacha20 -in texto.rc4 -out descifrado.rc4 -pbkdf2
 ```
@@ -206,8 +206,112 @@ Tamaños obtenidos
 
 ### -  cifrar un fichero con contraseña y descifrarlo NO con dicha contraseña, sino con su conjunto equivalente de clave (key), vector de inicialización (iv) y sal (salt).
 
-### Documentar el trabajo realizado, con ejemplos de los resultados obtenidos (valores binarios en hexadecimal, Base64 o en formato PEM) y profusión de cortes de volcados de pantalla. Abstenerse de mostrar en pantalla el volcado de binarios puros.
+<br>
 
+Se usará el archivo de texto que se ha utilizado durante el resto de la práctica.
+
+La contraseña usada para cifrar es "tarea12"
+
+En primer lugar se cifra usando la opción p para imprimir los datos que necesitamos:
+
+```console
+openssl enc -aes-128-cbc -salt -in texto.txt -out tarea1_2c.aes-128-cbc -p  -pbkdf2
+```
+Captura:
+![ejer1_2_c1](./images/ejer1_2_c1.PNG)
+
+Guardamos los datos impresos por pantalla: 
+```console
+salt=4DB5930EEBE1D9E9
+key=27DE8AC58971C8732C2BA197854139AD
+iv =34FC741EBC68B913143C2055EBB3B57C
+```
+Ahora se debe extraer la SALT para posteriormente descifrarlo:
+```console
+cat tarea1_2c.aes-128-cbc | dd ibs=16 obs=16 skip=1 > tarea1_2c.nosalt
+```
+
+Para descifrarlo se usa la opción -K(clave), -iv(vector de inicializacion), -S(salt):
+
+```console
+openssl enc -aes-128-cbc -d -in tarea1_2c.nosalt -K 27DE8AC58971C8732C2BA197854139AD -iv 34FC741EBC68B913143C2055EBB3B57C -S 4DB5930EEBE1D9E9 -out tarea1_2c.descifrado
+```
+Captura:
+![ejer1_2_c2](./images/ejer1_2_c2.PNG)
+
+## 1.3 Generación de claves asimétricas (pública-privada) y firmado de resúmenes
+
+### • Generar un par de claves asimétricas RSA de 2048 bits.
+La contraseña que se usará será "tarea13"
+
+Primero se gennera la clave privada:
+```console
+ openssl genpkey -algorithm RSA -aes256 -out RSA.pem -pkeyopt rsa_keygen_bits:2048
+```
+Captura:
+![ejer1_3_a1](./images/ejer1_3_a1.PNG)
+
+A continuación se generará la clave pública a partir de la privada:
+```console
+ openssl pkey -in RSA.pem -pubout -out PRSA.pem
+```
+Captura:
+![ejer1_3_a2](./images/ejer1_3_a2.PNG)
+
+Clave Privada Generada:
+```console
+-----BEGIN ENCRYPTED PRIVATE KEY-----
+MIIFLTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIvzBVAuSdE3cCAggA
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBCstHQyFQjKTFCPfZFaILPfBIIE
+0IbpTV0Zu3+gK4Da2Ih8p5YX9Mirx/oLgcYBNF4jRw96WVMypvA1q7WyuBt3Yd1z
+c47RsAbF4sw0TnXcLI+jM1IZAsCQ8FRcZadSaBbh+bc/tYlwGLOuWJsYX1KywDio
+0zJcfp/vA55ueaGS/uvLMatoQu1cwiVhqpsCk7+HsQcmqg7srdnGUCb97RVEkL/2
+VUvStjdbSgeVQwLKn03S/hnh0EaplmcO9ysfWHA/dtO8C9+n4nu3NwDspsQtBuY0
+kuIj8HfqYi5aNbTIVlcoqsAgaPIGK6tFXVtQJh4HbGA74x4V7JX+ULJQTYPPON17
+fkQFxyqWamS+ViKlYqOVM+hq4nFxSDecpz53pj/Fi3JPwfv0HYZXmmixqDihkihe
+tSZvPV+3wWvTsRwwn38s9pfUzbd4Pcsz+exQSUD0m8RiVO5jxHeWCcxmXfm3x1Fa
++X/aPzKixAfu7j9U/wQXn7TYxK3PuoKdKzD2Xa3oDgINjhOzuy0XV/nHSAgpzpBl
+q0h0oGA1OwV1hCfs94Ukhun5VlV/vSYH2XSteVGC9XaEpNgChHoMM9lvivdR03Cy
+5ebFAInniHojpWTbCSRyjpZwBN4ZZap/OVNnY5fRt2tkQI0xjK5SpIxtnLDu+4bc
+s9aSCGCpPmDHny1P26qXcS5SD2LqFPlpzitgiyM2PZvxMUeQNgmGT9UiG2gf+3Jp
+Uxs1esitqKYdwMsmDNu3INlPiIOb26voP2DwCukykk08r/7MgG6uXMlCoHA6xlkQ
+Dpp4ygwcC502VfKySocNarnHm4UQ1IGji+KKKRBnZDoqEWOdbSzhfhgakaw9OPWO
+PL6SUgfkF2u7K2h/sUYs6Pqg+03EokOgHYfsjXCI/PDRrylONgN4R6o+UrkEsnS0
+uWFo9s693GdWNe0rjH0MeqrYjKXAxjivhFP5kFWWVMQ0h7MczkyhtG/EBVqk+lgs
+tQD9ywHApaGxn2DlKNHw9ehvifwgEhoNHgc48zG9e/98wYsXkm57zgfHBfiIYpDV
+lGfZCAfyYkUE+/mWkhAX/wd41/FZ/cgGwheFR00Veg+yAF/7XQ4qIWWBSiQ3UU4y
+N2bJ5c7g1bmnm+K5Ls1+RJelE2S5ajU2wa2UMjk8SlIPgPyUSrVDKnrDS8o5HcLk
+p1LnicuuiGO6LI6EcDMh0PBsvOkvH761bG2A5P0m0XOW3s/DS4T4cNMYnnMzeDDq
+2Ef2csgJ4TZpzYoC5OIpymQgdxK5E7wq+3PxvFMgLimssfQdgtNzTv7gnxO/EHUk
+FoRHxwB30fSN7KfIDNuhDU8eHliqjq+7N49ErKpAydhQkY+56jADLeb/Q3FyJ1yA
+wc6kstyQjxZRCzf92JVLqqpyVfjARTWi7MrVLqBUQBIzt9N1eejtR0WPy2cMetBd
+CdPolNeFRfPHxGziu9rTe51ayEhs56pu6C39GMtvCYqPv9sWsgJhu6ZAYH/PWUfx
+tiNbvhK445fX7U8BoeUaF9fsSt1ZcUaX8tnuAZ+G8kjtfdnzuII6dXyvGhtDX8NT
+UHuyoDGV5I/qhomxoZWSmuF7dvznyBHQgV+Vi8r8cgLHSBkkovViTyHDZNnSK8Q8
+mLp3vGQ73pc+ihcLTrC4EQna+1bCtaHhLktiWAODjyB6
+-----END ENCRYPTED PRIVATE KEY-----
+```
+Clave Pública Generada:
+```console
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3HX5heHiuMfBOSH2d+yF
+sAZZ11qJ+13oEbhno06nUILeB8WXrWSNSWMb0m2sR1tF+P67kk/odK7EcMuF39Sa
+2kqX8FbaoMvJpviRLHCVwpG6cwLG/cog51wBNh7I30oB26wyOoe2ayDuB9pIrKzi
+Surdnv4XUHUxXGbpiv17eD4AgDXLpyUMKACCxYfasPt6qA4tjgpJXDRWP7L8U6/1
+PAh8bN9BQhJAm0OP5UbIQTA0obN9NwbRoF5aMepn7jHPpqMw+Sxllr+oxUa0v9t9
+ziK1hhN5cgtROv2+0Q+wqXgrIzq8rc3oODi3N0gRbwyQ9A3GGeV3RCSCIBao+xlM
+OwIDAQAB
+-----END PUBLIC KEY-----
+```
+### • Exportar dicho par de claves (pública y privada) en formato PEM (textual) y DER (binario).Utilizar los comandos de conversión de PEM a DER y viceversa.
+```console
+ openssl ec -in ecprivkey.pem -pubout -outform DER -out ecpubkey.der
+``` 
+### • Con los dos pares de claves asimétricas creadas, firmar y comprobar la firma del resumen (con SHA-256) de un fichero de texto del apartado anterior.
+
+### • OPCIONAL: Repetir los tres pasos anteriores con claves DSA
+
+### • Generar dos claves DH con curva elíptica X25519 y demostrar que la combinación pública1- privada2 genera el mismo secreto que la combinación privada1-pública2.
 
 
 
