@@ -304,15 +304,117 @@ OwIDAQAB
 -----END PUBLIC KEY-----
 ```
 ### • Exportar dicho par de claves (pública y privada) en formato PEM (textual) y DER (binario).Utilizar los comandos de conversión de PEM a DER y viceversa.
+Conversión de la clave privada a DER:
 ```console
- openssl ec -in ecprivkey.pem -pubout -outform DER -out ecpubkey.der
+ openssl rsa -inform PEM -in RSA.pem -outform DER -out RSA.der
 ``` 
+Captura:
+![ejer1_3_b1](./images/ejer1_3_b1.PNG)
+
+Conversión de la clave pública a DER:
+```console
+openssl rsa -inform PEM -pubin -in PRSA.pem -pubout -outform DER -out PRSA.der
+``` 
+Captura:
+![ejer1_3_b2](./images/ejer1_3_b2.PNG)
+
+Ahora se realizará la conversión inversamente y se comprobará:
+
+Conversión de la clave privada a PEM:
+```console
+ openssl rsa -inform DER -in RSA.der -outform PEM -out RSA2.pem
+``` 
+Captura:
+![ejer1_3_b3](./images/ejer1_3_b3.PNG)
+
+Conversión de la clave pública a PEM:
+```console
+openssl rsa -inform DER -pubin -in PRSA.der -pubout -outform PEM -out PRSA2.pem
+``` 
+Captura:
+![ejer1_3_b4](./images/ejer1_3_b4.PNG)
+
+Se puede comprobar  que la clave pública obtenida es igual a la generada anteriormente:
+```console
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3HX5heHiuMfBOSH2d+yF
+sAZZ11qJ+13oEbhno06nUILeB8WXrWSNSWMb0m2sR1tF+P67kk/odK7EcMuF39Sa
+2kqX8FbaoMvJpviRLHCVwpG6cwLG/cog51wBNh7I30oB26wyOoe2ayDuB9pIrKzi
+Surdnv4XUHUxXGbpiv17eD4AgDXLpyUMKACCxYfasPt6qA4tjgpJXDRWP7L8U6/1
+PAh8bN9BQhJAm0OP5UbIQTA0obN9NwbRoF5aMepn7jHPpqMw+Sxllr+oxUa0v9t9
+ziK1hhN5cgtROv2+0Q+wqXgrIzq8rc3oODi3N0gRbwyQ9A3GGeV3RCSCIBao+xlM
+OwIDAQAB
+-----END PUBLIC KEY-----
+```
+
 ### • Con los dos pares de claves asimétricas creadas, firmar y comprobar la firma del resumen (con SHA-256) de un fichero de texto del apartado anterior.
 
-### • OPCIONAL: Repetir los tres pasos anteriores con claves DSA
+Se crea el resumen del texto y se firma:
+```console
+openssl dgst -sha256 -sign RSA.pem -out firmado.rsa texto.txt
+```
+Captura:
+![ejer1_3_c1](./images/ejer1_3_c1.PNG)
+
+Se comprueba:
+```console
+openssl dgst -sha256 -verify PRSA.pem -signature firmado.rsa texto.txt
+```
+Captura:
+![ejer1_3_c2](./images/ejer1_3_c2.PNG)
 
 ### • Generar dos claves DH con curva elíptica X25519 y demostrar que la combinación pública1- privada2 genera el mismo secreto que la combinación privada1-pública2.
 
+Se generan las claves privadas:
+```console
+openssl genpkey -algorithm X25519 -out privada1.pem
+openssl genpkey -algorithm X25519 -out privada2.pem
+```
+Se extraen las claves públicas:
+```console
+openssl pkey -in privada1.pem -pubout -out publica1.pem
+openssl pkey -in privada2.pem -pubout -out publica2.pem
+```
+Se deriva un valor secreto usando la clave privada1 y la clave publica2:
+```console
+openssl pkeyutl -derive -inkey privada1.pem -peerkey publica2.pem -out valor1
+```
+Se deriva otro valor secreto usando la clave privada2 y la clave publica1:
+```console
+openssl pkeyutl -derive -inkey privada2.pem -peerkey publica1.pem -out valor2
+```
+
+Se comparan los secretos:
+```console
+cmp valor1 valor2
+```
+Captura:
+![ejer1_3_d1](./images/ejer1_3_d1.PNG)
 
 
+## 1.4 Cifrado Asimétrico de documentos
 
+### En este apartado vamos a reproducir en una secuencia de operaciones el intercambio de informaciónsegura entre dos agentes utilizando cifrado simétrico, cifrado asimétrico de las claves simétricas yfirma digital (cifrado asimétrico de un resumen del documento original). Para ello, generaremos dos parejas de claves RSA que serán utilizadas por dos agentes (Ana y Berto) de forma que Ana construirá tres ficheros de texto a partir del fichero de texto original, el primero con el fichero cifrado, el segundo con las claves utilizadas y el tercero con la firma digital. Así, primero generaremos las dos claves:
+
+<br>
+
+### • Generar una pareja de claves RSA en ficheros anapub.pem y anapriv.pem y otra pareja de claves del mismo tipo bertopub.pem y bertopriv.pem. 
+### • Proteger ambas claves privadas con contraseña “anak” y “bertok” respectivamente.
+
+<br>
+
+### Se supone que Ana y Berto han intercambiado sus claves públicas. A continuación, realizaremos el trabajo de Ana:
+### • Cifrar un fichero de texto mensaje.txt de los apartados anteriores con AES-256 en modo CBC, con clave y vector escogidos por el estudiante y sin sal, con salida en formato BASE4 a un fichero llamado cifrado.txt.
+### • Crear un fichero binario con la concatenación de la clave y el vector utilizados, de nombre claves.txt y cifrarlo con la clave pública bertopub.pem, con salida en formato binario a un fichero claves.bin
+### •Convertir claves.bin a claves.txt en formato BASE64 (mediante openssl enc -a …)
+### • Obtener un resumen sha256 del fichero de texto original y firmarlo (es decir, cifrarlo con la clave privada anapriv.pem -clave anak-), con salida en formato BASE64 a un fichero llamado firma.txt.
+
+<br>
+
+### En este momento, Ana enviaría los tres ficheros obtenidos cifrado.txt, claves.txt y firma.txt (junto a la meta-información relativa a los algoritmos utilizados, cómo se concatenan clave y vector…) a Berto… que seremos nosotros mismos. Actuando como Berto, procederemos a:
+### • Convertir el fichero claves.txt a fichero binario claves2.bin con openssl enc -a…
+### • Descifrar el fichero claves2.bin con la clave privada bertopriv.pem (contraseña bertok) y salida a un fichero claves2.txt (debería ser idéntico a claves.txt).
+### • Extraer de claves2.txt la clave y el vector en formato hexadecimal, siguiendo la metainformación que le envió Ana junto con los tres ficheros.
+### • Descifrar el fichero cifrado.txt con la clave y el vector obtenidos y salida al fichero mensaje2.txt (que debería ser igual al fichero original mensaje.txt utilizado por Ana).
+
+### • Verificar que el fichero firma.txt con la clave pública de Ana, anapub.pem coincide con un resumen sha256 del fichero mensaje2.txt.
