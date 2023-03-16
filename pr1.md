@@ -394,27 +394,80 @@ Captura:
 
 ## 1.4 Cifrado Asimétrico de documentos
 
-### En este apartado vamos a reproducir en una secuencia de operaciones el intercambio de informaciónsegura entre dos agentes utilizando cifrado simétrico, cifrado asimétrico de las claves simétricas yfirma digital (cifrado asimétrico de un resumen del documento original). Para ello, generaremos dos parejas de claves RSA que serán utilizadas por dos agentes (Ana y Berto) de forma que Ana construirá tres ficheros de texto a partir del fichero de texto original, el primero con el fichero cifrado, el segundo con las claves utilizadas y el tercero con la firma digital. Así, primero generaremos las dos claves:
+### En este apartado vamos a reproducir en una secuencia de operaciones el intercambio de información segura entre dos agentes utilizando cifrado simétrico, cifrado asimétrico de las claves simétricas yfirma digital (cifrado asimétrico de un resumen del documento original). Para ello, generaremos dos parejas de claves RSA que serán utilizadas por dos agentes (Ana y Berto) de forma que Ana construirá tres ficheros de texto a partir del fichero de texto original, el primero con el fichero cifrado, el segundo con las claves utilizadas y el tercero con la firma digital. Así, primero generaremos las dos claves:
 
 <br>
 
 ### • Generar una pareja de claves RSA en ficheros anapub.pem y anapriv.pem y otra pareja de claves del mismo tipo bertopub.pem y bertopriv.pem. 
 ### • Proteger ambas claves privadas con contraseña “anak” y “bertok” respectivamente.
 
+Se generan primero las claves privadas utilizando las contraseñas propuestas:
+```console
+openssl genpkey -algorithm RSA -aes256 -out anapriv.pem -pkeyopt rsa_keygen_bits:2048
+openssl genpkey -algorithm RSA -aes256 -out bertopriv.pem -pkeyopt rsa_keygen_bits:2048
+```
+A continuación se generan las claves públicas a partir de las privadas:
+```console
+openssl pkey -in anapriv.pem -pubout -out anapub.pem
+openssl pkey -in bertopriv.pem -pubout -out bertopub.pem
+```
+
+
 <br>
 
 ### Se supone que Ana y Berto han intercambiado sus claves públicas. A continuación, realizaremos el trabajo de Ana:
-### • Cifrar un fichero de texto mensaje.txt de los apartados anteriores con AES-256 en modo CBC, con clave y vector escogidos por el estudiante y sin sal, con salida en formato BASE4 a un fichero llamado cifrado.txt.
-### • Crear un fichero binario con la concatenación de la clave y el vector utilizados, de nombre claves.txt y cifrarlo con la clave pública bertopub.pem, con salida en formato binario a un fichero claves.bin
-### •Convertir claves.bin a claves.txt en formato BASE64 (mediante openssl enc -a …)
-### • Obtener un resumen sha256 del fichero de texto original y firmarlo (es decir, cifrarlo con la clave privada anapriv.pem -clave anak-), con salida en formato BASE64 a un fichero llamado firma.txt.
 
+### • Cifrar un fichero de texto mensaje.txt de los apartados anteriores con AES-256 en modo CBC, con clave y vector escogidos por el estudiante y sin sal, con salida en formato BASE64 a un fichero llamado cifrado.txt.
+```console
+#Se copia el texto de los apartados anteriores
+cp texto.txt mensaje.txt 
+
+#Se generan la clave y el vector aleatoriamente
+openssl rand -hex 32 > clave
+openssl rand -hex 16 > iv
+
+#Se cifra el fichero 
+openssl enc -aes-256-cbc -pbkdf2 -in mensaje.txt -out cifrado.txt -base64 -K $(cat clave) -iv $(cat iv)
+```
+
+### • Crear un fichero binario con la concatenación de la clave y el vector utilizados, de nombre claves.txt y cifrarlo con la clave pública bertopub.pem, con salida en formato binario a un fichero claves.bin
+```console
+cat clave iv > claves.txt
+openssl pkeyutl -encrypt -pubin -inkey bertopub.pem -in claves.txt -out claves.bin
+```
+### •Convertir claves.bin a claves.txt en formato BASE64 
+```console
+#Se crea un directorio ya que ya se tiene un archivo nombrado claves.txt
+mkdir final
+#Se convierte la clave
+openssl enc -base64 -in claves.bin -out ./final/claves.txt
+```
+### • Obtener un resumen sha256 del fichero de texto original y firmarlo (es decir, cifrarlo con la clave privada anapriv.pem clave anak) , con salida en formato BASE64 a un fichero llamado firma.txt.
+```console
+openssl dgst -sha256 -binary  mensaje.txt >  resumen.txt
+openssl pkeyutl -sign -in resumen.txt -inkey anapriv.pem -out firma.bin
+openssl enc -base64 -in firma.bin -out firma.txt
+```
 <br>
 
 ### En este momento, Ana enviaría los tres ficheros obtenidos cifrado.txt, claves.txt y firma.txt (junto a la meta-información relativa a los algoritmos utilizados, cómo se concatenan clave y vector…) a Berto… que seremos nosotros mismos. Actuando como Berto, procederemos a:
-### • Convertir el fichero claves.txt a fichero binario claves2.bin con openssl enc -a…
+
+### • Convertir el fichero claves.txt a fichero binario claves2.bin
+```console
+openssl base64 -d -in ./final/claves.txt -out claves2.bin
+```
 ### • Descifrar el fichero claves2.bin con la clave privada bertopriv.pem (contraseña bertok) y salida a un fichero claves2.txt (debería ser idéntico a claves.txt).
+```console
+openssl pkeyutl -decrypt -inkey bertopriv.pem -in claves2.bin -out claves2.txt 
+
+#Se compara usando el comando cmp
+cmp claves.txt claves2.txt
+```
+Captura:
+![ejer1_4_a1](./images/ejer1_4_a1.PNG)
+
 ### • Extraer de claves2.txt la clave y el vector en formato hexadecimal, siguiendo la metainformación que le envió Ana junto con los tres ficheros.
+
 ### • Descifrar el fichero cifrado.txt con la clave y el vector obtenidos y salida al fichero mensaje2.txt (que debería ser igual al fichero original mensaje.txt utilizado por Ana).
 
 ### • Verificar que el fichero firma.txt con la clave pública de Ana, anapub.pem coincide con un resumen sha256 del fichero mensaje2.txt.
