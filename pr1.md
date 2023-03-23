@@ -471,3 +471,99 @@ Captura:
 ### • Descifrar el fichero cifrado.txt con la clave y el vector obtenidos y salida al fichero mensaje2.txt (que debería ser igual al fichero original mensaje.txt utilizado por Ana).
 
 ### • Verificar que el fichero firma.txt con la clave pública de Ana, anapub.pem coincide con un resumen sha256 del fichero mensaje2.txt.
+
+<br>
+
+## 2.1 Envío, recepción y decodificación manual de mensajes S/MIME firmados y cifrados, empleando certificados creados por el estudiante y firmados con el certificado raíz de prácticas de esta asignatura.
+
+### a) Descargar certificadoRaiz.crt y certificadoRaiz.key de la página de la asignatura
+
+### b) Crear la clave de nuestro certificado (openssl genpkey ........) -> certificadoPersonal.key (hay que crear una contraseña que protege esta clave – ANOTARLA)
+La contraseña usada sera tarea21
+``` console
+openssl genpkey -algorithm RSA -aes256 -out certificadoPersonal.key -pkeyopt rsa_keygen_bits:2048
+```
+Captura:
+![ejer2_1_b](./images/ejer2_1_b.PNG)
+### c) Crear el CSR de nuestro certificado (openssl req –new ........) -> certificadoPersonal.csr
+``` console
+openssl req -new -key certificadoPersonal.key -out certificadoPersonal.csr
+```
+Captura:
+![ejer2_1_c](./images/ejer2_1_c.PNG)
+### d) Crear nuestro certificado personal a partir del CSR, el certificado raíz y su clave, para ello habrá que introducir la contraseña SEGURIDAD que protege la clave de la raíz, el comando será del tipo (openssl x509 –req –days 365 ........) -> certificadoPersonal.crt
+```console
+openssl x509 -req -days 360 -in certificadoPersonal.csr -CA certificadoRaiz.crt -CAkey
+certificadoRaiz.key -CAcreateserial -out certificadoPersonal.crt
+
+# Para verificarlo:
+openssl verify -CAfile certificadoRaiz.crt certificadoPersonal.crt
+```
+Captura:
+![ejer2_1_d](./images/ejer2_1_d.PNG)
+Captura:
+![ejer2_1_d2](./images/ejer2_1_d2.PNG)
+### e) El último apartado de la Wiki, 6.6: PEM a PKCS#12 explica cómo crear un fichero “inter.p12” a partir de certificadoIntermedio.crt y certificadoIntermedio.key, tendremos que hacer un comando similar, cambiando “Intermedio” por “Personal” para crear un fichero llamado certificadoPersonal.p12. Atención: el comando nos pedirá la clave que protege certificadoPersonal y a continuación otra clave (podría ser la misma) para proteger el fichero de salida, certificadoPersonal.p12 El comando será del tipo (openssl pkcs12 export ........) -> certificadoPersonal.p12
+La clave usada será tarea21
+
+```console
+openssl pkcs12 -export -in certificadoPersonal.crt -inkey certificadoPersonal.key -out certificadoPersonal.p12
+```
+Captura:
+![ejer2_1_e](./images/ejer2_1_e.PNG)
+
+## 2.2 Instalación de los certificados en el cliente de correo e intercambio de certificados y correo firmado y cifrado con otro compañero  
+
+### 2.2.1. Una vez creado nuestro certificado digital, hemos de configurar el cliente de correo electrónico Mozilla Thunderbird para que pueda firmar y cifrar mensajes con dicho certificado. Los correos a través de web (como el de la ULPGC) no permiten el uso de certificados, así que si no lo tenemos instalado, habrá que configurar previamente Mozilla Thunderbird con nuestro correo electrónico personal (no el de la ULPGC).
+
+### 2.2.2. En este cliente de correo electrónico hemos de instalar tanto la parte pública del certificado raíz (fichero certificadoRaiz.crt), como nuestro certificado personal completo (fichero certificadoPersonal.p12) con la contraseña que le pusimos. En Thunderbird, hay que acceder a Herramientas/Opciones/Avanzado/Administrar certificados). Al Importar el certificado raíz, asignarle confianza para gestionar correo electrónico y verificar que se encuentra en el almacén de “Autoridades” (debe aparecer en primer lugar, ya que el nombre de la organización es “AA – Autoridad de prácticas FS/ASSI”. A continuación, hemos de importar nuestro certificadoPersonal.p12 e introducir la contraseña que lo protege. Verificar que nuestro certificado personal aparece en el almacén de “Sus certificados” o similar.
+
+Captura:
+![ejer2_2_2](./images/ejer2_2_2.PNG)
+![ejer2_2_2](./images/ejer2_2_2b.PNG)
+
+### 2.2.3. Con ambos certificados ya instalados, hay que configurar nuestra cuenta de correo electrónico para que utilice nuestro certificado personal, en Thunderbird eso se hace en Herramientas/Configuración de cuenta/Seguridad… al pulsar el botón de Seleccionar en las opciones de Firmado Digital y Cifrado debe aparecer seleccionado nuestro certificado personal que cargamos previamente. Importante: no seleccionar las opciones de firmar y cifrar siempre, es mejor decidir cuándo se envían mensajes firmados y cifrados antes de enviar cada mensaje.
+Captura:
+![ejer2_2_3](./images/ejer2_2_3.PNG)
+
+### 2.2.4. Una vez configurado e instalado el certificado, podremos FIRMAR los mensajes que enviemos, pero para cifrar correo hacia un destinatario, es necesario disponer previamente de SU certificado personal (obviamente, sólo con la clave pública). Por tanto aconsejamos intercambiar mensajes sólo firmados con otro compañero y así nuestro programa de correo almacenará el certificado del compañero que acompaña a su mensaje cifrado. Una vez que verifiquemos que el certificado del compañero está en nuestro almacén de “Otras personas” ya podremos intercambiar mensajes cifrados y firmados.
+![ejer2_2_4](./images/ejer2_2_4.PNG)
+
+
+### 2.2.5. Enviar un mensaje con Asunto: (nombre y apellidos) a dicha dirección de correo (la del compañero) con un breve texto de salutación y sobre todo, con las opciones de firmado y cifrado activadas. 
+![ejer2_2_43](./images/ejer2_2_43.PNG)
+
+## 2.3 Decodificación con la utilidad “openssl smime” del mensaje cifrado y firmado que recibimos del compañero
+
+
+### 2.3.1. Una vez el mensaje cifrado y firmado del compañero, se trata de decodificar ese mensaje desde la utilidad “openssl smime”. Para ello, hemos de guardar desde Thunderbird el mensaje completo como texto (seleccionar mensaje, botón de la derecha, Guardar cómo…), exportar nuestro certificado completo (o utilizar nuestro fichero certificadoPersonal.p12) y el certificado del compañero (Exportar en formato .crt) y procesar estos tres ficheros (mensaje de texto y los dos certificados) a través de la citada utilidad “openssl smime”.
+Se guarda el certificado del compañero y el mensaje en formato eml:
+![ejer2_3_1](./images/ejer2_3_1.PNG)
+![ejer2_3_2](./images/ejer2_3_2.PNG)
+### 2.3.2. El apartado 5.- S/MIME de la Wiki explica con detalle cómo procesar correos S/MIME desde línea de comandos openssl, lo que pedimos ahora está explicado en el apartado 5.2.4. – Descifrar mensaje cifrado y firmado de la citada Wiki. Obsérvese que el descifrado y la verificación de firma han de hacerse por separado. Documentar este proceso en detalle. 
+Primero se debe convertir la clave personal del receptor a pem utilizando el siguiente comando:
+``` console
+openssl pkcs12 -in certificadoPersonal.p12 -legacy -out certificadoPersonal.pem 
+``` 
+A continuación se utiliza la funcionalidad de smime para descifrar el mensaje de correo:
+``` console
+openssl smime -decrypt -in Carlos\ Suárez\ Domínguez\ -\ \'Carlos\ Suárez\ Domínguez\'\ \(littleguitar.2001\@gmail.com\)\ -\ 2023-03-23\ 1429.eml  -recip certificadoPersonal.pem -out mensajedescifrado.txt
+```
+
+![ejer2_3_3](./images/ejer2_3_3.PNG)
+
+Por ultimo se verifica la firma con el siguiente comando:
+``` console
+openssl smime -verify -in mensajedescifrado.txt -CAfile certificadoRaiz.crt
+``` 
+![ejer2_3_3](./images/ejer2_3_3b.PNG)
+
+
+## 3 Configuración de un SERVIDOR WEB SEGURO (SHTTP) utilizando un certificado AUTOFIRMADO, con privilegios de Administrador en un servidor web – Apache, ISS, etc.
+### Esta tercera parte de la práctica 1 consiste en la creación de un certificado AUTOFIRMADO de servidor Web, utilizando las herramientas de la utilidad openssl, tal y cómo se indica en el apartado de la Wiki 6.1 – Certificado Raíz Autofirmado; y en la instalación de dicho certificado en un servidor apache seguro, que responda a la dirección web https://www.ejemplo.com. Para ello, el campo “Sujeto” o “Common Name” del certificado ha de ser la cadena “www.ejemplo.com”.
+### Una vez configurado el servidor seguro, se preparará una página HTML y se colocará como “index.html” en el directorio raíz del servidor, de forma que esta página será accedida de forma segura, por el puerto 443, desde un navegador web. Todo el proceso ha de ser documentado con profusión de ejemplos de comandos en línea, de ficheros de configuración (resumidos) y de volcados de pantalla.
+### A diferencia de las anteriores, esta parte de la práctica requiere privilegios de administrador en la máquina en la que se pretenda configurar el servidor seguro. Podrá realizarse en una máquina Windows, Linux o Mac, virtual ó real, pero el servidor ha de ser un APACHE. El nombre del servidor seguro será “www.ejemplo.com”. Dado que no disponemos de control, desde el punto de vista del “Domain Name Service” o DNS, sobre el dominio de Internet “ejemplo.com”, tendremos que asegurarnos de que tanto el servidor como el programa cliente que utilicemos para realizar una conexión de prueba (que podrá ser en la misma máquina o en otra conectada en red) tienen definido el nombre www.ejemplo.com en su fichero de HOSTS. En una máquina Linux, este fichero se encuentra en /etc/hosts, mientras que en Windows su localización es “\windows\system32\drivers\etc\hosts” o similar.
+### El objetivo de esta parte es conseguir que el estudiante resuelva un problema real, haciendo uso de los recursos de Internet. Por tanto, no se detallan las instrucciones. Precisamente lo que se pretende es que el estudiante redacte una breve pero clara y concisa descripción de los pasos a ser realizados y la incorpore en la memoria de la práctica.
+
+Primero se debe instalar el Apache y mod_ssl:
+```
