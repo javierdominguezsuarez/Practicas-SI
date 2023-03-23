@@ -566,4 +566,49 @@ openssl smime -verify -in mensajedescifrado.txt -CAfile certificadoRaiz.crt
 ### El objetivo de esta parte es conseguir que el estudiante resuelva un problema real, haciendo uso de los recursos de Internet. Por tanto, no se detallan las instrucciones. Precisamente lo que se pretende es que el estudiante redacte una breve pero clara y concisa descripción de los pasos a ser realizados y la incorpore en la memoria de la práctica.
 
 Primero se debe instalar el Apache y mod_ssl:
+``` console
+sudo apt update
+sudo apt install apache2
+sudo ufw app list
+sudo ufw allow 'Apache'
+sudo a2enmod ssl
+
+ ```
+A continuacion se crea el directorio /etc/ssl/private, se accede y creamos el certificado
+``` console
+mkdir /etc/ssl/private
+cd /etc/ssl/private
+openssl req -new > new.ssl.csr
+# La contraseña usada es tarea3
 ```
+Captura:
+![ejer3_1](./images/ejer3_1.PNG)
+
+Se crea la clave privada
+```console
+ openssl rsa -in privkey.pem -out web.key
+ openssl x509 -in web.csr -out web.cert -req -signkey web.key -days 365
+```
+Captura:
+![ejer3_2](./images/ejer3_2.PNG)
+
+A continuación se accede a la configuración de apache y se modifica para añadir los certificados con sus rutas:
+``` console
+vim /etc/apache2/sites-available/default-ssl.conf
+ a2enmod ssl
+ a2ensite default-ssl.conf
+ service apache2 reload
+```
+Captura: 
+![ejer3_6](./images/ejer3_6.PNG)
+
+Ahora se personalizará el html del servidor:
+``` console
+cd /var/www/html
+vim index.html
+```
+Captura:
+![ejer3_4](./images/ejer3_4.PNG)
+Captura:
+![ejer3_5](./images/ejer3_5.PNG)
+![ejer3_7](./images/ejer3_7.PNG)
