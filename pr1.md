@@ -427,34 +427,40 @@ openssl rand -hex 32 > clave
 openssl rand -hex 16 > iv
 
 #Se cifra el fichero 
-openssl enc -aes-256-cbc -pbkdf2 -in mensaje.txt -out cifrado.txt -base64 -K $(cat clave) -iv $(cat iv)
+openssl enc -aes-256-cbc -pbkdf2 -in mensaje.txt -out cifrado.txt -nosalt -base64 -K $(cat clave) -iv $(cat iv)
 ```
-
+Captura:
+![ejer1_4_1](./images/ejer1_4_1.PNG)
 ### • Crear un fichero binario con la concatenación de la clave y el vector utilizados, de nombre claves.txt y cifrarlo con la clave pública bertopub.pem, con salida en formato binario a un fichero claves.bin
 ```console
-cat clave iv > claves.txt
+# Se usa el pipe con el comando xxd para que la salida sea binaria
+echo $(cat clave)$(cat iv) | xxd -r -p > claves.txt
 openssl pkeyutl -encrypt -pubin -inkey bertopub.pem -in claves.txt -out claves.bin
 ```
+Captura:
+![ejer1_4_2](./images/ejer1_4_2.PNG)
 ### •Convertir claves.bin a claves.txt en formato BASE64 
 ```console
-#Se crea un directorio ya que ya se tiene un archivo nombrado claves.txt
-mkdir final
-#Se convierte la clave
-openssl enc -base64 -in claves.bin -out ./final/claves.txt
+openssl enc -a -in claves.bin -out claves64.txt
 ```
+Captura:
+![ejer1_4_3](./images/ejer1_4_3.PNG)
 ### • Obtener un resumen sha256 del fichero de texto original y firmarlo (es decir, cifrarlo con la clave privada anapriv.pem clave anak) , con salida en formato BASE64 a un fichero llamado firma.txt.
 ```console
 openssl dgst -sha256 -binary  mensaje.txt >  resumen.txt
 openssl pkeyutl -sign -in resumen.txt -inkey anapriv.pem -out firma.bin
 openssl enc -base64 -in firma.bin -out firma.txt
 ```
+Captura:
+![ejer1_4_4](./images/ejer1_4_4.PNG)
+
 <br>
 
 ### En este momento, Ana enviaría los tres ficheros obtenidos cifrado.txt, claves.txt y firma.txt (junto a la meta-información relativa a los algoritmos utilizados, cómo se concatenan clave y vector…) a Berto… que seremos nosotros mismos. Actuando como Berto, procederemos a:
 
 ### • Convertir el fichero claves.txt a fichero binario claves2.bin
 ```console
-openssl base64 -d -in ./final/claves.txt -out claves2.bin
+openssl base64 -d -in claves64.txt -out claves2.bin
 ```
 ### • Descifrar el fichero claves2.bin con la clave privada bertopriv.pem (contraseña bertok) y salida a un fichero claves2.txt (debería ser idéntico a claves.txt).
 ```console
@@ -464,14 +470,30 @@ openssl pkeyutl -decrypt -inkey bertopriv.pem -in claves2.bin -out claves2.txt
 cmp claves.txt claves2.txt
 ```
 Captura:
-![ejer1_4_a1](./images/ejer1_4_a1.PNG)
+![ejer1_4_5](./images/ejer1_4_5.PNG)
 
 ### • Extraer de claves2.txt la clave y el vector en formato hexadecimal, siguiendo la metainformación que le envió Ana junto con los tres ficheros.
+```  console
+head -c 32 claves2.txt | xxd -p -c 32 | tr -d '\n' > clave2
+tail -c 16 claves2.txt | xxd -p -c 16 | tr -d '\n' > iv2
+```
+Captura:
+![ejer1_4_6](./images/ejer1_4_6.PNG)
 
 ### • Descifrar el fichero cifrado.txt con la clave y el vector obtenidos y salida al fichero mensaje2.txt (que debería ser igual al fichero original mensaje.txt utilizado por Ana).
+``` console 
+openssl enc -aes-256-cbc -d -in cifrado.txt -out mensajedescifrado.txt -base64 -nosalt -K 23de99f465f3b3dbb53eb1625a92e5e25bd0ae63bc1e2e79bdb36428d929409c -iv 79928d8b9abb2ca82bbc5c78644f37bc -pbkdf2 
+```
+Captura:
+![ejer1_4_7](./images/ejer1_4_7.PNG)
 
 ### • Verificar que el fichero firma.txt con la clave pública de Ana, anapub.pem coincide con un resumen sha256 del fichero mensaje2.txt.
-
+``` Console 
+openssl dgst -sha256 -binary -out resumen2.txt mensajedescifrado.txt
+openssl pkeyutl -verify -in resumen2.txt -sigfile firma.bin -pubin -inkey anapub.pem
+```
+Captura:
+![ejer1_4_8](./images/ejer1_4_8.PNG)
 <br>
 
 ## 2.1 Envío, recepción y decodificación manual de mensajes S/MIME firmados y cifrados, empleando certificados creados por el estudiante y firmados con el certificado raíz de prácticas de esta asignatura.
